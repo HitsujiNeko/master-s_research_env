@@ -11,7 +11,7 @@ Google Earth Engineを使用して、
 
 対象領域一覧（仮）
 - ハノイ
-REGION = [105.75, 20.95, 106.00, 21.15]  
+REGION = [105.27, 20.55, 106.03, 21.40] 
 - ホーチミン
 REGION = [106.60, 10.75, 106.85, 10.95]  
 - ダナン
@@ -39,7 +39,7 @@ END_DATE = '2025-01-31'  # 終了日 例: '2025-01-31'
 CLOUD_COVER = 20  
 
 # 範囲：　　緯度1, 経度1, 緯度2, 経度2の順で指定
-REGION = [105.75, 20.95, 106.00, 21.15]  
+REGION = [105.27, 20.55, 106.03, 21.40]  
 
 FILE_NAME_PREFIX = 'hanoi_lst8_202501'  # 出力ファイル名の接頭辞
 
@@ -54,7 +54,12 @@ MAX_PIXELS = 1e9  # エクスポート可能な最大ピクセル数
 
 
 # Google Earth Engine APIの初期化
-ee.Initialize(project=GGE_PROJECT)
+try:
+       ee.Initialize(project=GGE_PROJECT)
+except Exception as e:
+       ee.Authenticate()
+       ee.Initialize(project=GGE_PROJECT)
+
 
 rect = ee.Geometry.Rectangle(REGION)
 
@@ -62,7 +67,7 @@ rect = ee.Geometry.Rectangle(REGION)
 dataset = ee.ImageCollection('LANDSAT/LC08/C02/T1_L2') \
     .filterDate(START_DATE, END_DATE) \
     .filterBounds(rect) \
-    .filter(ee.Filter.lt('CLOUD_COVER', CLOUD_COVER))  # 雲量20%未満
+    .filter(ee.Filter.lt('CLOUD_COVER', CLOUD_COVER))  # 雲量の閾値でフィルタリング
 
 # 画像のマスク処理（雲、影、雪を除去）
 def mask_clouds(img):
