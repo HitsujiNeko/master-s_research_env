@@ -1,0 +1,18 @@
+name: myenv
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - numpy
+  - pandas
+  - matplotlib
+  - jupyterlab
+  - geopandas
+  - gdal
+  - scikit-learn
+  - ipykernel
+  - seaborn
+  - earthengine-api
+  - pip   # ← 追加推奨
+  - pip:
+      - japanize-matplotlib
