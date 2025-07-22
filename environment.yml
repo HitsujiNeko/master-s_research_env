@@ -13,6 +13,7 @@ dependencies:
   - ipykernel
   - seaborn
   - earthengine-api
+  - geemap
   - pip   # ← 追加推奨
   - pip:
       - japanize-matplotlib

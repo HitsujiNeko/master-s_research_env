@@ -34,24 +34,17 @@ SCALE = 1000  # MODISの空間解像度（m）
 CRS = 'EPSG:4326'
 MAX_PIXELS = 1e9
 
-
-
 # Earth Engine API初期化
 try:
     ee.Initialize(project=GGE_PROJECT)
 except Exception as e:
     ee.Authenticate()
     ee.Initialize(project=GGE_PROJECT)
-
 rect = ee.Geometry.Rectangle(REGION)
-
 # MODIS MOD11A2 LSTデータセット
 dataset = ee.ImageCollection('MODIS/061/MOD11A2') \
     .filterDate(START_DATE, END_DATE) \
     .filterBounds(rect)
-
-
-
 # LSTバンド（LST_Day_1km）を摂氏に変換
 # スケール: 0.02, Kelvin → Celsius
 def calc_modis_lst(img):
@@ -59,17 +52,14 @@ def calc_modis_lst(img):
     lst = lst.rename('LST_C')
     return lst.copyProperties(img, ['system:time_start', 'system:time_end'])
 
-
 lst_images = dataset.map(calc_modis_lst)
 mean_lst = lst_images.mean()
-
 
 # 期間内の画像の日付一覧を表示
 dates = dataset.aggregate_array('system:time_start').getInfo()
 for t in dates:
     dt = datetime.utcfromtimestamp(t / 1000)
     print(dt.strftime('%Y-%m-%d %H:%M:%S'))
-
 
 # GeoTIFFでエクスポート
 task = ee.batch.Export.image.toDrive(
