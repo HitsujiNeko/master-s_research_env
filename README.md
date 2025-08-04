@@ -47,3 +47,14 @@ df = pd.read_csv('/workspaces/ResearchEnv/workspace/data/sample.csv')
 - Anaconda/Miniconda（コンテナ内で自動セットアップされます）
 
 ---
+
+## 依存関係の管理
+依存関係は `environment.yml` ファイルで管理されています。必要に応じて以下のコマンドで更新できます。
+```bash
+conda env update -f environment.yml
+``` 
+# 依存関係の追加
+必要なパッケージを追加したい場合は、`environment.yml` に追加してください。
+
+
+---
