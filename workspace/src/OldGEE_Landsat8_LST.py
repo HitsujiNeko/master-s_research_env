@@ -3,6 +3,10 @@ Google Earth Engineを使用して、
 ハノイ周辺のLandsat 8データからLST（地表面温度）を取得し
 、GeoTIFF形式でエクスポートするスクリプト 
 
+大気補正済みのLandsat 8 Collection 2 Level 2データを使用
+
+注意点：放射率は考慮していない
+
 
 
 現状のコードは期間内の平均LST画像を出力するコード
@@ -42,7 +46,6 @@ CLOUD_COVER = 20
 ROI = [105.27, 20.55, 106.03, 21.40]  
 
 FILE_NAME_PREFIX = 'hanoi_lst8_202501'  # 出力ファイル名の接頭辞
-
 
 FOLDER_NAME = 'EarthEngine'  # Google Drive上の保存先フォルダ
 SCALE = 30  # 出力画像の解像度（メートル単位）
