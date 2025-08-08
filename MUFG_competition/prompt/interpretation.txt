@@ -1,29 +1,210 @@
 # interpretation.txt
+前処理やモデル選定に関する方針を考える際にデータの理解を深めるためのドキュメントです。
 
 
-## データの概要
+# データの概要　
 - 中小企業向け融資データを用いて、各企業が債務を返済できるか（デフォルトするか）を予測する。
+LoanStatusが1の場合はデフォルト、0の場合はデフォルトしていない。
 - train.csv: 学習用データ（目的変数LoanStatusあり）
+MUFG_competition/data/raw/train.csv
 - test.csv: 予測用データ（目的変数なし）
+MUFG_competition/data/raw/test.csv
 - sample_submit.csv: 提出フォーマット（id, 予測値[0/1]）
 - 特徴量詳細は description.txt を参照。
+- 数値特徴量一覧：
+CongressionalDistrict, GrossApproval, SBAGuaranteedApproval, InitialInterestRate, TermInMonths, JobsSupported
+- カテゴリ特徴量一覧：
+Subprogram,FixedOrVariableInterestInd,NaicsSector,BusinessType,BusinessAge,CollateralInd,RevolverStatus,ApprovalFiscalYear
+- 目的変数：
+LoanStatus（1 = デフォルト, 0 = デフォルトしていない）
 
-## データの前処理方法
-- 欠損値や異常値の有無を調査し、必要に応じて補完・除去を行う。
-- カテゴリ変数はOne-Hotエンコーディング等で数値化。
-- 連続値は標準化・正規化を検討。
-- 特徴量の意味や型を整理したデータ辞書を作成。
 
-## モデルの選定理由
-- 目的変数が2値分類（デフォルト or 返済完了）であるため、ロジスティック回帰や決定木系（RandomForest, LightGBM等）を候補。
-- 複数モデルで比較し、F1スコアが高いものを選定。
+# データの理解内容
+- 欠損値は存在しないので欠損値の補完は不要
 
-## モデルの評価方法
-- F1スコアを使用。
-- 暫定評価は評価用データセットの50%、最終評価は残り50%で実施。
-- リーダーボードは最終評価で順位決定。
+- 目的変数
+LoanStatus: ローンの状態（1 = デフォルト, 0 = デフォルトしていない）
+trainデータ7500件中、0が6588件(87.238%)、1が912件 (12.122%)。
+このため、クラス不均衡が存在する。
 
-## 結果の解釈
-- 重要な特徴量（例：融資額、金利、期間、業種など）が返済可否に与える影響を分析。
-- モデルの予測結果を可視化し、誤分類の傾向や改善点を検討。
-- 分析結果・仮説・今後の改善案をNotebookに記載。
+- 数値変数の基礎統計量
+各数値変数に対して、基本的な統計量（平均値、中央値、最小値、最大値、標準偏差など）を算出した結果をまとめたのが以下のファイルである。
+MUFG_competition/data/understand/数値特徴量の基礎統計量.csv
+
+<AIが解釈結果を記述>
+■ GrossApproval（融資承認額）
+
+平均：約72万、中央値：約19万、最小：5千、最大：約500万、標準偏差：約111万
+小口融資が多いが、最大値は大口も存在。分布の幅が広い。
+■ SBAGuaranteedApproval（補償金額）
+
+平均：約45万、中央値：約10万、最小：2.5千、最大：約430万、標準偏差：約78万
+融資額同様、小口が多いが大口も一部存在。
+■ ApprovalFiscalYear（承認年度）
+
+平均：約2021年、中央値：2021年、最小：2020年、最大：2024年
+2020～2024年に分布。近年のデータが中心。
+■ InitialInterestRate（初期金利）
+
+平均：約7.38%、中央値：約6.61%、最小：1.03%、最大：15.0%、標準偏差：約2.88%
+金利は5～7%台が中心だが、低金利・高金利も一部存在。
+■ TermInMonths（融資期間）
+
+平均：約120ヶ月（10年）、中央値：119ヶ月、最小：3ヶ月、最大：306ヶ月（約25年）、標準偏差：約82ヶ月
+5年・10年・25年など複数のピークがある。
+■ CongressionalDistrict（選挙区）
+
+平均：約12.68、中央値：7.0、最小：0、最大：52、標準偏差：約12.31
+選挙区は広範囲に分布。
+■ RevolverStatus（リボルビング/定期貸付）
+
+平均：約0.12、中央値：0、最小：0、最大：1
+定期貸付が主流（1は少数）。
+■ JobsSupported（雇用数）
+
+平均：約14.28人、中央値：5人、最小：0人、最大：236人、標準偏差：約27.63人
+小規模事業者が中心だが、最大値は大規模事業者も一部存在。
+■ LoanStatus（目的変数：デフォルト有無）
+
+平均：約0.13、中央値：0、最小：0、最大：1
+デフォルト率は約13%（クラス不均衡）。
+【全体傾向】
+
+ほぼ全ての数値特徴量で分布の幅が広く、外れ値も存在。
+融資額・補償金額・雇用数は小口・小規模が中心だが、大口・大規模も一部存在。
+金利・期間は複数のピークがあり、事業者の属性が多様。
+デフォルト率は低く、クラス不均衡が顕著。
+<解釈結果はここまで>
+
+
+- 数値変数、カテゴリ変数の分布
+数値変数の分布は以下のファイルにまとめた。（ビン分割数は30）
+MUFG_competition/data/understand/bin_counts/{num_col_name}_bin_counts.csv
+num_col_nameは各数値変数の名称。 例: GrossApproval_bin_counts.csv
+
+<解釈結果を記述>
+MUFG_competition/data/understand/bin_counts 内の各CSV（数値特徴量の分布）を解釈します。
+
+【特徴量ごとの分布・傾向まとめ】
+
+■ CongressionalDistrict
+- 低い値（1.7～5.2）に多く分布し、1461件・897件・826件と集中。高い値ほど件数が減少し、分布は右裾が長い。
+- 一部の選挙区に融資が集中している可能性。
+
+■ GrossApproval（融資承認額）
+- 最小～約17万までが3573件と最多。以降、件数は急減し、最大約500万まで広がる。
+- 融資額は小口が多く、大口は少数。右裾が長い分布。
+
+■ InitialInterestRate（初期金利）
+- 4.7～6.1%付近に多く分布（758件、697件、650件）。10%超の高金利も一定数存在。
+- 金利は5～6%台が主流だが、低金利・高金利も少数派として存在。
+
+■ JobsSupported（雇用数）
+- 0～8人が4744件と圧倒的多数。以降、件数は急減し、最大236人まで広がる。
+- 小規模事業者が中心で、雇用数が多い事業者はごく一部。
+
+■ SBAGuaranteedApproval（補償金額）
+- 0～14万が4337件と最多。以降、件数は急減し、最大約430万まで広がる。
+- 融資額同様、小口が多く、大口は少数。
+
+■ TermInMonths（融資期間）
+- 114～124ヶ月（約10年）が2578件と最多。次いで296～306ヶ月（約25年）が976件。
+- 60ヶ月（5年）前後も多い。短期・長期の2ピーク型分布。
+
+【全体傾向】
+- 「低い値に集中し、高い値ほど件数が減る」右裾が長い分布の数値特徴量が多い。
+- 融資額・補償金額・雇用数は小規模事業者が中心。融資期間は10年・25年が多い。
+- 外れ値（極端に高い値）は少数だが存在し、モデル構築時は外れ値の影響に注意が必要。
+<解釈結果はここまで>
+
+
+カテゴリ変数の分布は以下のファイルにまとめた。
+MUFG_competition/data/understand/cat_counts.csv
+
+<解釈結果を記述>
+■ Subprogram（ローン種別）
+- FA$TRK (Small Loan Express)・Guaranty が圧倒的多数（3471件・3282件）。Community Advantage Initiative（261件）などは少数派。
+- 一部のローン種別に申請が集中している。
+
+■ FixedOrVariableInterestInd（固定/変動金利）
+- 変動金利（V）が6158件、固定金利（F）が1394件。変動金利が主流。
+
+■ NaicsSector（業種大分類）
+- Construction（1196件）、Professional_scientific_technical services（930件）、Other services（692件）、Manufacturing（655件）、Retail trade（655件）が多い。
+- 業種は建設・専門サービス・製造・小売などに偏り。
+
+■ BusinessType（事業形態）
+- CORPORATION（6747件）が圧倒的多数。INDIVIDUAL（586件）、PARTNERSHIP（218件）は少数。
+
+■ BusinessAge（事業年数区分）
+- Existing or more than 2 years old（2796件）、New Business or 2 years or less（2545件）、Startup（1234件）、Change of Ownership（624件）、Unanswered（353件）。
+- 既存事業・新規事業が中心。Startupも一定数。
+
+■ CollateralInd（担保有無）
+- Y（有担保）が4752件、N（無担保）が2800件。担保ありがやや多い。
+
+■ RevolverStatus（リボルビング/定期貸付）
+- 0（定期貸付）が6678件、1（リボルビング）が874件。定期貸付が主流。
+
+■ ApprovalFiscalYear（承認年度）
+- 2020年（3222件）、2022年（1848件）、2021年（1522件）、2023年（815件）、2024年（145件）。
+- 2020～2022年が多く、2023年以降は減少傾向。
+
+【全体傾向】
+- ほぼ全てのカテゴリ変数で「一部の値に集中し、その他は少数派」という偏りが見られる。
+- 特に事業形態（CORPORATION）、ローン種別（FA$TRK, Guaranty）、金利種別（変動金利）、業種（建設・専門サービス）が多い。
+- 年度は2020～2022年が中心。2023年以降は申請件数が減少。
+<解釈結果はここまで>
+
+
+- 数値変数の外れ値・異常値
+各数値変数に対して、IQR法とZスコア法を用いて外れ値・異常値を検出し、その件数をまとめた結果を以下のファイルに保存した。
+MUFG_competition/data/understand/数値特徴量の外れ値・異常値件数.csv
+
+<AIが解釈結果を記述>
+■ 数値特徴量の外れ値・異常値
+GrossApproval, SBAGuaranteedApproval, TermInMonths, JobsSupported で外れ値が多い（IQR法で約1,000件以上、Zスコア法でも200件前後）。
+InitialInterestRate は外れ値が全く検出されていない。
+CongressionalDistrict は外れ値が少ない（IQR法26件、Zスコア法52件）。
+外れ値の多い特徴量は分布の幅が広く、極端な値が存在するため、モデル構築時は外れ値の影響に注意。
+必要に応じて外れ値の除去・変換やロバストな手法の検討が重要。
+<解釈結果はここまで>
+
+- 数値特徴量間の相関行列
+各数値特徴量間の相関を調べ、相関行列を算出した結果をまとめたのが以下のファイルである。
+MUFG_competition/data/understand/数値特徴量間の相関行列.csv
+
+<AIが解釈結果を記述>
+■ 数値特徴量間の相関行列
+GrossApproval と SBAGuaranteedApproval の相関が非常に高い（0.93）。
+InitialInterestRate は他の特徴量と弱い負の相関（特に融資額・補償金額と約-0.31）。
+TermInMonths は融資額・補償金額と中程度の正の相関（約0.40）。
+JobsSupported は融資額・補償金額と弱い正の相関（約0.29）。
+CongressionalDistrict は他の特徴量とほぼ無相関。
+高い相関のある特徴量（GrossApproval, SBAGuaranteedApproval）は多重共線性に注意。
+<解釈結果はここまで>
+
+
+- カテゴリ変数と目的変数の関係
+各カテゴリ変数に対して、目的変数（LoanStatus）との関係を調査した結果をまとめたのが以下のファイルである。
+各カテゴリ変数の値ごとに、デフォルト率（LoanStatus=1の割合）を算出したファイル
+MUFG_competition/data/understand/カテゴリ変数とLoanStatusの関係.csv
+
+<AIが解釈結果を記述>
+Subprogram（ローン種別）では、Community Advantage Initiative（約20%）、Startup（約19%）など一部でデフォルト率が高い。
+Guaranty（約14%）、FA$TRK（約13%）など主流ローン種別も平均より高め。
+BusinessType では Startup, Loan Funds will Open Business（約19%）が高く、CORPORATION（約13%）、INDIVIDUAL（約5%）、PARTNERSHIP（約3%）と事業形態で差がある。
+業種（NaicsSector）は Professional_scientific_technical services（約17%）、Retail trade（約18%）などで高い。
+BusinessAge では Startup（約19%）、Change of Ownership（約13%）、新規事業（約12%）が高め。
+CollateralInd（担保有無）は N（無担保）が約16%、Y（有担保）が約11%で、無担保の方がデフォルト率が高い。
+RevolverStatus（リボルビング/定期貸付）は N（定期貸付）が約16%、Y（リボルビング）が約11%。
+ApprovalFiscalYear（年度）は2021年（約15.7%）、2022年（約14.6%）が高く、2024年（約6.2%）が最も低い。
+FixedOrVariableInterestInd は V（変動金利）が約14%、F（固定金利）が約7%。
+全体として、ローン種別・事業形態・業種・担保有無・年度などでデフォルト率に大きな差があり、これらの特徴量はモデルの重要な説明変数となる。
+<解釈結果はここまで>
+
+- trainデータとtestデータの分布比較
+いずれの変数もtrainデータとtestデータで大きな分布の差は見られない。
+カテゴリ変数の NaicsSector に関して、trainデータには'Public administration'が存在しないが
+testデータには1件存在する。
+
