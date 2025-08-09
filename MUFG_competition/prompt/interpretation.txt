@@ -11,12 +11,10 @@ MUFG_competition/data/raw/train.csv
 MUFG_competition/data/raw/test.csv
 - sample_submit.csv: 提出フォーマット（id, 予測値[0/1]）
 - 特徴量詳細は description.txt を参照。
-- 数値特徴量一覧：
-CongressionalDistrict, GrossApproval, SBAGuaranteedApproval, InitialInterestRate, TermInMonths, JobsSupported
-- カテゴリ特徴量一覧：
-Subprogram,FixedOrVariableInterestInd,NaicsSector,BusinessType,BusinessAge,CollateralInd,RevolverStatus,ApprovalFiscalYear
-- 目的変数：
-LoanStatus（1 = デフォルト, 0 = デフォルトしていない）
+ 数値特徴量一覧：
+ GrossApproval, SBAGuaranteedApproval, InitialInterestRate, TermInMonths, JobsSupported
+ カテゴリ特徴量一覧：
+ Subprogram,FixedOrVariableInterestInd,NaicsSector,BusinessType,BusinessAge,CollateralInd,RevolverStatus,ApprovalFiscalYear,CongressionalDistrict
 
 
 # データの理解内容
@@ -33,11 +31,10 @@ MUFG_competition/data/understand/数値特徴量の基礎統計量.csv
 
 <AIが解釈結果を記述>
 ■ GrossApproval（融資承認額）
-
 平均：約72万、中央値：約19万、最小：5千、最大：約500万、標準偏差：約111万
 小口融資が多いが、最大値は大口も存在。分布の幅が広い。
-■ SBAGuaranteedApproval（補償金額）
 
+■ SBAGuaranteedApproval（補償金額）
 平均：約45万、中央値：約10万、最小：2.5千、最大：約430万、標準偏差：約78万
 融資額同様、小口が多いが大口も一部存在。
 ■ ApprovalFiscalYear（承認年度）
@@ -86,11 +83,6 @@ num_col_nameは各数値変数の名称。 例: GrossApproval_bin_counts.csv
 MUFG_competition/data/understand/bin_counts 内の各CSV（数値特徴量の分布）を解釈します。
 
 【特徴量ごとの分布・傾向まとめ】
-
-■ CongressionalDistrict
-- 低い値（1.7～5.2）に多く分布し、1461件・897件・826件と集中。高い値ほど件数が減少し、分布は右裾が長い。
-- 一部の選挙区に融資が集中している可能性。
-
 ■ GrossApproval（融資承認額）
 - 最小～約17万までが3573件と最多。以降、件数は急減し、最大約500万まで広がる。
 - 融資額は小口が多く、大口は少数。右裾が長い分布。
@@ -110,6 +102,8 @@ MUFG_competition/data/understand/bin_counts 内の各CSV（数値特徴量の分
 ■ TermInMonths（融資期間）
 - 114～124ヶ月（約10年）が2578件と最多。次いで296～306ヶ月（約25年）が976件。
 - 60ヶ月（5年）前後も多い。短期・長期の2ピーク型分布。
+
+ 
 
 【全体傾向】
 - 「低い値に集中し、高い値ほど件数が減る」右裾が長い分布の数値特徴量が多い。
@@ -149,6 +143,13 @@ MUFG_competition/data/understand/cat_counts.csv
 ■ ApprovalFiscalYear（承認年度）
 - 2020年（3222件）、2022年（1848件）、2021年（1522件）、2023年（815件）、2024年（145件）。
 - 2020～2022年が多く、2023年以降は減少傾向。
+
+ ■ CongressionalDistrict（選挙区）
+ 選挙区は1～52までの整数型。広範囲に分布し、低い値（1~5）に多く集中。高い値ほど件数が減少し、分布は右裾が長い。
+ - 件数上位は 3（783件）、2（678件）、4（622件）、6（344件）、5（275件）など。
+ - 一部の選挙区では申請件数が極端に少ない（例：52は6件）。
+ - 一部の選挙区に融資が集中している可能性がある。
+ - 選挙区ごとの地理的・経済的背景がデフォルト率に影響している可能性がある。
 
 【全体傾向】
 - ほぼ全てのカテゴリ変数で「一部の値に集中し、その他は少数派」という偏りが見られる。
@@ -200,6 +201,7 @@ CollateralInd（担保有無）は N（無担保）が約16%、Y（有担保）�
 RevolverStatus（リボルビング/定期貸付）は N（定期貸付）が約16%、Y（リボルビング）が約11%。
 ApprovalFiscalYear（年度）は2021年（約15.7%）、2022年（約14.6%）が高く、2024年（約6.2%）が最も低い。
 FixedOrVariableInterestInd は V（変動金利）が約14%、F（固定金利）が約7%。
+CongressionalDistrict（選挙区）では、
 全体として、ローン種別・事業形態・業種・担保有無・年度などでデフォルト率に大きな差があり、これらの特徴量はモデルの重要な説明変数となる。
 <解釈結果はここまで>
 
