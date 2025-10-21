@@ -17,24 +17,27 @@ from glob import glob
 # -------------------------------
 # パラメータ設定
 # -------------------------------
-YEAR = 2022
-INPUT_FOLDER = f'workspace/data/geotiff/LST_{YEAR}'
-OUTPUT_FOLDER = f'workspace/data/indexes/{YEAR}'
-CSV_OUTPUT = f'workspace/data/indexes/statistics_{YEAR}.csv'
+YEAR = 2023
+INPUT_FOLDER = f'workspace/data/geotiff/Landsat8/reflectance/{YEAR}'
+OUTPUT_FOLDER = f'workspace/data/geotiff/Landsat8/indexes/{YEAR}'
+CSV_OUTPUT = f'workspace/data/csv/index_statistics_{YEAR}.csv'
 
 # -------------------------------
-# 作成する指標関数（拡張可能）
+# 作成する指標関数
 # -------------------------------
 
 def calculate_ndvi(red, nir):
+    # 正規化植生指数
     ndvi = (nir - red) / (nir + red + 1e-10)
     return ndvi
 
 def calculate_ndwi(green, nir):
+    # 正規化水分指数
     ndwi = (green - nir) / (green + nir + 1e-10)
     return ndwi
 
 def calculate_ndbi(swir, nir):
+    # 正規化建物指数
     ndbi = (swir - nir) / (swir + nir + 1e-10)
     return ndbi
 
@@ -48,21 +51,20 @@ for path in sorted(glob(os.path.join(INPUT_FOLDER, '*.tif'))):
     with rasterio.open(path) as src:
         profile = src.profile
         bands = src.read()
+        print(np.nanmin(bands), np.nanmax(bands))
+        print (f'バンド名の確認: {src.descriptions} ')
 
         band_dict = {
-            'SR_B2': None,  # Blue
-            'SR_B3': None,  # Green
-            'SR_B4': None,  # Red
-            'SR_B5': None,  # NIR
-            'SR_B6': None,  # SWIR1
+            'SR_B2': bands[1],  # Blue
+            'SR_B3': bands[2],  # Green
+            'SR_B4': bands[3],  # Red
+            'SR_B5': bands[4],  # NIR
+            'SR_B6': bands[5],  # SWIR1
         }
 
-        for i, name in enumerate(src.descriptions):
-            if name in band_dict:
-                band_dict[name] = bands[i]
 
         # 必要なバンドが揃っているか確認
-        if all(band_dict.values()):
+        if all(b is not None for b in band_dict.values()):
             ndvi = calculate_ndvi(band_dict['SR_B4'], band_dict['SR_B5'])
             ndwi = calculate_ndwi(band_dict['SR_B3'], band_dict['SR_B5'])
             ndbi = calculate_ndbi(band_dict['SR_B6'], band_dict['SR_B5'])
@@ -90,9 +92,13 @@ for path in sorted(glob(os.path.join(INPUT_FOLDER, '*.tif'))):
                 'NDBI_mean': float(np.nanmean(ndbi)),
             }
             records.append(stats)
+            print(f"{path}内の指標計算と保存が完了しました。")
+        else:
+            print(f"{path}内のファイルに必要なバンドが揃っていません。")
 
 # -------------------------------
 # 統計CSV出力
 # -------------------------------
+os.makedirs(os.path.dirname(CSV_OUTPUT), exist_ok=True)
 df = pd.DataFrame(records)
 df.to_csv(CSV_OUTPUT, index=False)
