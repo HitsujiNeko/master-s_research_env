@@ -15,6 +15,7 @@ dependencies:
   - earthengine-api
   - geemap
   - rasterio
+  - fiona 
   - pip   # ← 追加推奨
   - pip:
       - japanize-matplotlib
